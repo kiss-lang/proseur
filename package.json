@@ -21,6 +21,7 @@
 	"activationEvents": [],
 	"displayName": "",
 	"dependencies": {
-		"jsdom": "^22.1.0"
+		"jsdom": "^22.1.0",
+		"mic": "^2.1.2"
 	}
 }
