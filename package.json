@@ -9,7 +9,7 @@
 	"homepage": "",
 	"categories": [],
 	"extensionPack": [],
-	"publisher": "",
+	"publisher": "NQNStudios",
 	"contributes": {},
 	"engines": {
 		"vscode": "^1.4.0"
