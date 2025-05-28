@@ -36,7 +36,7 @@
                     :Dynamic micInputStream (micInstance.getAudioStream)]
 
                     (localFunction nextFile []
-                        (micInputStream.pipe (fs.WriteStream "${wavFolder}/{num}.wav"))
+                        (micInputStream.pipe (fs.WriteStream "${wavFolder}/${num}.wav"))
                         (micInputStream.on "data" ->data {
                             (print "Recieved Input Stream: ${data.length}")
                         })
