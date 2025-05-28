@@ -9,7 +9,7 @@
 	"homepage": "",
 	"categories": [],
 	"extensionPack": [],
-	"publisher": "NQNStudios",
+	"publisher": "kiss-lang",
 	"contributes": {},
 	"engines": {
 		"vscode": "^1.4.0"
