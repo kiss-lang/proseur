@@ -12,96 +12,48 @@
             (print "Open a text file to transcribe in!")
             (return))
 
-        (Sys.setCwd ~(activeTextEditor.document.fileName.directory))
+        (let [file activeTextEditor.document.fileName
+                wavFolder "${file}.dir"]
+            (Sys.setCwd (file.directory))
+            (let [&mut num (if (FileSystem.isDirectory wavFolder)
+                                        .length (FileSystem.readDirectory wavFolder)
+                                    {
+                                        (FileSystem.createDirectory wavFolder)
+                                        0
+                                    })
+                    :Dynamic mic (js.Lib.require "mic")
+                    :Dynamic fs (js.Lib.require "fs")
+                    :Dynamic micInstance (mic (object rate "48000"
+                                                    channels "1"
+                                                    debug true
+                                                    exitOnSilence 6
+                                                    fileType "wav"))
+                    :Dynamic micInputStream (micInstance.getAudioStream)]
 
-        (let [:Dynamic mic (js.Lib.require "mic")
-                :Dynamic fs (js.Lib.require "fs")
-                :Dynamic micInstance (mic (object rate "48000"
-                                                channels "1"
-                                                debug true
-                                                exitOnSilence 6
-                                                fileType "wav"))
-                :Dynamic micInputStream (micInstance.getAudioStream)
-                :Dynamic outputFileStream ~(fs.WriteStream "output.wav")]
-                (micInputStream.pipe outputFileStream)
-                (micInputStream.on "data" ->data {
-                    (print "Recieved Input Stream: ${data.length}")
-                })
-                (micInputStream.on "error" ->err {
-                    (print "Error in Input Stream: ${err}")
-                })
-                (micInputStream.on "startComplete" -> {
-                    (print "SIGNAL startComplete")
-                })
-                (micInputStream.on "stopComplete" -> {
-                    (print "Got SIGNAL stopComplete")
-                })
-                (micInputStream.on "silence" ->err {
-                    (print "Got SIGNAL silence")
-                    (micInstance.stop)
-                })
-                (micInstance.start)
-            (return))
-/*
-var mic = require('mic');
-var fs = require('fs');
+                    (localFunction nextFile []
+                        (micInputStream.pipe (fs.WriteStream "${wavFolder}/{num}.wav"))
+                        (micInputStream.on "data" ->data {
+                            (print "Recieved Input Stream: ${data.length}")
+                        })
+                        (micInputStream.on "error" ->err {
+                            (print "Error in Input Stream: ${err}")
+                        })
+                        (micInputStream.on "startComplete" -> {
+                            (print "SIGNAL startComplete")
+                        })
+                        (micInputStream.on "stopComplete" -> {
+                            (print "Got SIGNAL stopComplete")
+                            (++num)
+                            (nextFile)
+                        })
+                        (micInputStream.on "silence" ->err {
+                            (print "Got SIGNAL silence")
+                            (micInstance.stop)
+                        })
+                        (micInstance.start))
 
-var micInstance = mic({
-    rate: '16000',
-    channels: '1',
-    debug: true,
-    exitOnSilence: 6
-});
-var micInputStream = micInstance.getAudioStream();
-
-var outputFileStream = fs.WriteStream('output.raw');
-
-micInputStream.pipe(outputFileStream);
-
-micInputStream.on('data', function(data) {
-    console.log("Recieved Input Stream: " + data.length);
-});
-
-micInputStream.on('error', function(err) {
-    console.log("Error in Input Stream: " + err);
-});
-
-micInputStream.on('startComplete', function() {
-    console.log("Got SIGNAL startComplete");
-    setTimeout(function() {
-            micInstance.pause();
-    }, 5000);
-});
-    
-micInputStream.on('stopComplete', function() {
-    console.log("Got SIGNAL stopComplete");
-});
-    
-micInputStream.on('pauseComplete', function() {
-    console.log("Got SIGNAL pauseComplete");
-    setTimeout(function() {
-        micInstance.resume();
-    }, 5000);
-});
-
-micInputStream.on('resumeComplete', function() {
-    console.log("Got SIGNAL resumeComplete");
-    setTimeout(function() {
-        micInstance.stop();
-    }, 5000);
-});
-
-micInputStream.on('silence', function() {
-    console.log("Got SIGNAL silence");
-});
-
-micInputStream.on('processExitComplete', function() {
-    console.log("Got SIGNAL processExitComplete");
-});
-
-micInstance.start();
-*/
-        )
+                
+            (return))))
     
     // Add your extension's configuration here with (defConfiguration <...>):
     // (defConfiguration 
