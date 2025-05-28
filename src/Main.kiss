@@ -1,12 +1,17 @@
 (loadFrom "kiss-vscode-api" "src/Util.kiss")
 (loadFrom "kiss-vscode-api" "src/KissUtil.kiss")
 
+(var &mut looping false)
+
 @(:expose "activate")
 (function activate [:ExtensionContext context]
     (printThroughInfoMessage)
     (awaitLetCatchThroughErrorMessage)
 
     // Add your extension's commands here with (defCommand <...>):
+    (defCommand context stopRecording "stop transcribing" "C-; C-d" []
+        (set looping false))
+
     (defCommand context startRecording "start transcribing" "C-; C-r" []
     	(unless activeTextEditor?.document?.fileName
             (print "Open a text file to transcribe in!")
@@ -43,17 +48,18 @@
                         })
                         (micInputStream.on "stopComplete" -> {
                             (print "Got SIGNAL stopComplete")
-                            (++num)
-                            (nextFile)
+                            ++num
+                            (when looping
+                                (nextFile))
                         })
                         (micInputStream.on "silence" ->err {
                             (print "Got SIGNAL silence")
                             (micInstance.stop)
                         })
                         (micInstance.start))
-
-                
-            (return))))
+                    (set looping true)
+                    (nextFile)))
+    (return))
     
     // Add your extension's configuration here with (defConfiguration <...>):
     // (defConfiguration 

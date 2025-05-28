@@ -17,12 +17,21 @@
 	"contributes": {
 		"keybindings": [
 			{
+				"command": "proseur.stopRecording",
+				"mac": "Cmd+; Cmd+d",
+				"key": "Ctrl+; Ctrl+d"
+			},
+			{
 				"command": "proseur.startRecording",
 				"mac": "Cmd+; Cmd+r",
 				"key": "Ctrl+; Ctrl+r"
 			}
 		],
 		"commands": [
+			{
+				"title": "proseur: stop transcribing",
+				"command": "proseur.stopRecording"
+			},
 			{
 				"title": "proseur: start transcribing",
 				"command": "proseur.startRecording"
