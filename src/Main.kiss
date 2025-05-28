@@ -8,16 +8,21 @@
 
     // Add your extension's commands here with (defCommand <...>):
     (defCommand context startRecording "start transcribing" "C-; C-r" []
+    	(unless activeTextEditor?.document?.fileName
+            (print "Open a text file to transcribe in!")
+            (return))
+
+        (Sys.setCwd ~(activeTextEditor.document.fileName.directory))
 
         (let [:Dynamic mic (js.Lib.require "mic")
                 :Dynamic fs (js.Lib.require "fs")
-                :Dynamic micInstance (mic (object rate "16000"
+                :Dynamic micInstance (mic (object rate "48000"
                                                 channels "1"
                                                 debug true
-                                                exitOnSilence 6))
+                                                exitOnSilence 6
+                                                fileType "wav"))
                 :Dynamic micInputStream (micInstance.getAudioStream)
                 :Dynamic outputFileStream ~(fs.WriteStream "output.wav")]
-                ~(Sys.getCwd)
                 (micInputStream.pipe outputFileStream)
                 (micInputStream.on "data" ->data {
                     (print "Recieved Input Stream: ${data.length}")
@@ -36,7 +41,7 @@
                     (micInstance.stop)
                 })
                 (micInstance.start)
-            )
+            (return))
 /*
 var mic = require('mic');
 var fs = require('fs');
