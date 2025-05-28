@@ -27,38 +27,39 @@
                                         0
                                     })
                     :Dynamic mic (js.Lib.require "mic")
-                    :Dynamic fs (js.Lib.require "fs")
-                    :Dynamic micInstance (mic (object rate "48000"
-                                                    channels "1"
-                                                    debug true
-                                                    exitOnSilence 6
-                                                    fileType "wav"))
-                    :Dynamic micInputStream (micInstance.getAudioStream)]
+                    :Dynamic fs (js.Lib.require "fs")]
 
-                    (localFunction nextFile []
-                        (micInputStream.pipe (fs.WriteStream "${wavFolder}/${num}.wav"))
-                        (micInputStream.on "data" ->data {
-                            (print "Recieved Input Stream: ${data.length}")
-                        })
-                        (micInputStream.on "error" ->err {
-                            (print "Error in Input Stream: ${err}")
-                        })
-                        (micInputStream.on "startComplete" -> {
-                            (print "SIGNAL startComplete")
-                        })
-                        (micInputStream.on "stopComplete" -> {
-                            (print "Got SIGNAL stopComplete")
-                            ++num
-                            (when looping
-                                (nextFile))
-                        })
-                        (micInputStream.on "silence" ->err {
-                            (print "Got SIGNAL silence")
-                            (micInstance.stop)
-                        })
-                        (micInstance.start))
-                    (set looping true)
-                    (nextFile)))
+                (localFunction nextFile []
+                    (localVar :Dynamic micInstance (mic (object rate "48000"
+                                                                channels "1"
+                                                                debug true
+                                                                exitOnSilence 6
+                                                                fileType "wav")))
+                    (localVar :Dynamic micInputStream (micInstance.getAudioStream))
+                    (micInputStream.pipe (fs.WriteStream "${wavFolder}/${num}.wav"))
+                    (micInputStream.on "data" ->data {
+                        (print "Recieved Input Stream: ${data.length}")
+                    })
+                    (micInputStream.on "error" ->err {
+                        (print "Error in Input Stream: ${err}")
+                    })
+                    (micInputStream.on "startComplete" -> {
+                        (print "SIGNAL startComplete")
+                    })
+                    (micInputStream.on "stopComplete" -> {
+                        (print "Got SIGNAL stopComplete")
+                        ++num
+                        (when looping
+                            (nextFile))
+                    })
+                    (micInputStream.on "silence" ->err {
+                        (print "Got SIGNAL silence")
+                        (micInstance.stop)
+                    })
+                    (micInstance.start))
+
+                (set looping true)
+                (nextFile)))
     (return))
     
     // Add your extension's configuration here with (defConfiguration <...>):
