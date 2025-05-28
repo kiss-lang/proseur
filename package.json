@@ -9,8 +9,26 @@
 	"homepage": "",
 	"categories": [],
 	"extensionPack": [],
+	"dependencies": {
+		"mic": "^2.1.2",
+		"jsdom": "^22.1.0"
+	},
 	"publisher": "kiss-lang",
-	"contributes": {},
+	"contributes": {
+		"keybindings": [
+			{
+				"command": "proseur.startRecording",
+				"mac": "Cmd+; Cmd+r",
+				"key": "Ctrl+; Ctrl+r"
+			}
+		],
+		"commands": [
+			{
+				"title": "proseur: start transcribing",
+				"command": "proseur.startRecording"
+			}
+		]
+	},
 	"engines": {
 		"vscode": "^1.4.0"
 	},
@@ -19,9 +37,5 @@
 	},
 	"version": "0.0.0",
 	"activationEvents": [],
-	"displayName": "",
-	"dependencies": {
-		"jsdom": "^22.1.0",
-		"mic": "^2.1.2"
-	}
+	"displayName": ""
 }

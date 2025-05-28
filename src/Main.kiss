@@ -16,10 +16,26 @@
                                                 debug true
                                                 exitOnSilence 6))
                 :Dynamic micInputStream (micInstance.getAudioStream)
-                :Dynamic outputFileStream (fs.WriteStream "output.wav")]
-
+                :Dynamic outputFileStream ~(fs.WriteStream "output.wav")]
+                ~(Sys.getCwd)
                 (micInputStream.pipe outputFileStream)
-                
+                (micInputStream.on "data" ->data {
+                    (print "Recieved Input Stream: ${data.length}")
+                })
+                (micInputStream.on "error" ->err {
+                    (print "Error in Input Stream: ${err}")
+                })
+                (micInputStream.on "startComplete" -> {
+                    (print "SIGNAL startComplete")
+                })
+                (micInputStream.on "stopComplete" -> {
+                    (print "Got SIGNAL stopComplete")
+                })
+                (micInputStream.on "silence" ->err {
+                    (print "Got SIGNAL silence")
+                    (micInstance.stop)
+                })
+                (micInstance.start)
             )
 /*
 var mic = require('mic');
