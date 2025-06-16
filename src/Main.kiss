@@ -38,22 +38,25 @@
                     (localVar :Dynamic micInputStream (micInstance.getAudioStream))
                     (micInputStream.pipe (fs.WriteStream "${wavFolder}/${num}.wav"))
                     (micInputStream.on "data" ->data {
-                        (print "Recieved Input Stream: ${data.length}")
+                        // (print "Recieved Input Stream: ${data.length}")
                     })
                     (micInputStream.on "error" ->err {
                         (print "Error in Input Stream: ${err}")
                     })
                     (micInputStream.on "startComplete" -> {
-                        (print "SIGNAL startComplete")
+                        // (print "SIGNAL startComplete")
                     })
                     (micInputStream.on "stopComplete" -> {
-                        (print "Got SIGNAL stopComplete")
+                        // (print "Got SIGNAL stopComplete")
+                        // Put marker into text file for the new wav file
+                        (startTranscribing wavFolder num)
+                        
                         ++num
                         (when looping
                             (nextFile))
                     })
                     (micInputStream.on "silence" ->err {
-                        (print "Got SIGNAL silence")
+                        // (print "Got SIGNAL silence")
                         (micInstance.stop)
                     })
                     (micInstance.start))
@@ -62,12 +65,32 @@
                 (nextFile)))
     (return))
     
+    (function startTranscribing [wavFolder num]
+        (awaitLet [&sync marker "{${num}.wav}"
+                    result (activeTextEditor.edit
+                        (lambda [e]
+                            (let [editor activeTextEditor]
+                                (e.insert editor.selection.active "${marker}\n"))))]
+            (when result
+            	// TODO make language and model options
+                (ChildProcess.exec "$whisperPath --output_format txt --language English --model turbo \"${wavFolder}/${num}.wav\""
+                    (object cwd wavFolder)
+                	->[error :String stdout stderr] {
+                        (when stderr (errorMessage stderr))
+
+                        (let [output (stdout.substr (+ 2 (stdout.indexOf "]")))
+                                markerStart (.indexOf (activeTextEditor.document.getText) marker)
+                                markerEnd (+ markerStart marker.length)
+                                range (new Range (toPosition markerStart) (toPosition markerEnd))]
+                            (activeTextEditor.edit ->e (e.replace range output)))                      
+                    }))))
+    
     // Add your extension's configuration here with (defConfiguration <...>):
-    // (defConfiguration 
-    //      :Bool configBool
-    //          (object
-    //              default false)
-    //      :String configString
-    //          (object
-    //              default ""))
+    (defConfiguration 
+    //  :Bool configBool
+    //      (object
+    //          default false)
+        :String whisperPath
+            (object
+                default ""))
     )

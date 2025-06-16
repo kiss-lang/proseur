@@ -36,7 +36,16 @@
 				"title": "proseur: start transcribing",
 				"command": "proseur.startRecording"
 			}
-		]
+		],
+		"configuration": {
+			"title": "proseur",
+			"properties": {
+				"proseur.whisperPath": {
+					"type": "string",
+					"default": ""
+				}
+			}
+		}
 	},
 	"engines": {
 		"vscode": "^1.4.0"

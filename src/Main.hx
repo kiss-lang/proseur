@@ -6,6 +6,7 @@ import sys.FileSystem;
 
 using StringTools;
 using haxe.io.Path;
+import js.node.ChildProcess;
 
 @:build(kiss.Kiss.build())
 class Main {}
