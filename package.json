@@ -40,9 +40,29 @@
 		"configuration": {
 			"title": "proseur",
 			"properties": {
-				"proseur.whisperPath": {
+				"proseur.pythonPath": {
 					"type": "string",
 					"default": ""
+				},
+				"proseur.device": {
+					"type": "string",
+					"default": "auto"
+				},
+				"proseur.modelSize": {
+					"type": "string",
+					"default": "turbo"
+				},
+				"proseur.language": {
+					"type": "string",
+					"default": "en"
+				},
+				"proseur.exitOnSilence": {
+					"type": "integer",
+					"default": 12
+				},
+				"proseur.computeType": {
+					"type": "string",
+					"default": "int8"
 				}
 			}
 		}

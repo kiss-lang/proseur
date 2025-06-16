@@ -2,11 +2,19 @@
 (loadFrom "kiss-vscode-api" "src/KissUtil.kiss")
 
 (var &mut looping false)
+(var &mut :Dynamic process)
+
+(var :Array<Array<String>> transcribing [])
 
 @(:expose "activate")
 (function activate [:ExtensionContext context]
     (printThroughInfoMessage)
     (awaitLetCatchThroughErrorMessage)
+
+    // TODO this is a hack - defCommand should pass context to the function that gets defined
+    (var &mut :ExtensionContext context_)
+    (set context_ context)
+    
 
     // Add your extension's commands here with (defCommand <...>):
     (defCommand context stopRecording "stop transcribing" "C-; C-d" []
@@ -17,8 +25,28 @@
             (print "Open a text file to transcribe in!")
             (return))
 
+        (when looping (return))
+
         (let [file activeTextEditor.document.fileName
                 wavFolder "${file}.dir"]
+            (unless pythonPath (errorMessage "You must set the pythonPath setting"))
+            (set process (ChildProcess.spawn pythonPath ["${context_.extensionPath}/src/model.py" modelSize device computeType language] (object cwd wavFolder)))
+            (process.stderr.on "data" ->output (errorMessage output))
+            // Transcription finished by faster-whisper
+            (process.stdout.on "data"
+                ->[:js.node.Buffer output] {
+                    (let [[file marker] (transcribing.shift)
+                            markerStart (.indexOf (activeTextEditor.document.getText) marker)
+                            markerEnd (+ markerStart marker.length)
+                            range (new Range (toPosition markerStart) (toPosition markerEnd))]
+                        (awaitLet [r (activeTextEditor.edit ->e (e.replace range (StringTools.trim (output.toString))))]
+                            (unless r (errorMessage "edit failed"))))
+                    (when transcribing
+                        (process.stdin.cork)
+                        (process.stdin.write "$(first (first transcribing))\n")
+                        (process.stdin.uncork))
+                    (unless looping (process.kill))
+                })
             (Sys.setCwd (file.directory))
             (let [&mut num (if (FileSystem.isDirectory wavFolder)
                                         .length (FileSystem.readDirectory wavFolder)
@@ -33,7 +61,7 @@
                     (localVar :Dynamic micInstance (mic (object rate "48000"
                                                                 channels "1"
                                                                 debug true
-                                                                exitOnSilence 6
+                                                                exitOnSilence exitOnSilence
                                                                 fileType "wav")))
                     (localVar :Dynamic micInputStream (micInstance.getAudioStream))
                     (micInputStream.pipe (fs.WriteStream "${wavFolder}/${num}.wav"))
@@ -43,17 +71,25 @@
                     (micInputStream.on "error" ->err {
                         (print "Error in Input Stream: ${err}")
                     })
+                    (localVar &mut :Float lastTime 0)
                     (micInputStream.on "startComplete" -> {
+                        (set lastTime (.getTime (Date.now)))
                         // (print "SIGNAL startComplete")
                     })
                     (micInputStream.on "stopComplete" -> {
                         // (print "Got SIGNAL stopComplete")
-                        // Put marker into text file for the new wav file
-                        (startTranscribing wavFolder num)
-                        
-                        ++num
-                        (when looping
-                            (nextFile))
+                        (let [timeTilSilence (- (.getTime (Date.now)) lastTime)]
+                        	(if (> (* exitOnSilence 120) timeTilSilence)
+                            		// Don't write out/transcribe silent, empty files
+                                    (nextFile)
+                                {
+                                    // Put marker into text file for the new wav file
+                                    (startTranscribing wavFolder num)
+                                    
+                                    ++num
+                                    (when looping
+                                        (nextFile))
+                                }))
                     })
                     (micInputStream.on "silence" ->err {
                         // (print "Got SIGNAL silence")
@@ -66,31 +102,37 @@
     (return))
     
     (function startTranscribing [wavFolder num]
-        (awaitLet [&sync marker "{${num}.wav}"
+    	(print "startTranscribing")
+        (awaitLet [&sync file "${wavFolder}/${num}.wav"
+                    &sync marker "{${num}.wav}"
                     result (activeTextEditor.edit
                         (lambda [e]
                             (let [editor activeTextEditor]
                                 (e.insert editor.selection.active "${marker}\n"))))]
             (when result
-            	// TODO make language and model options
-                (ChildProcess.exec "$whisperPath --output_format txt --language English --model turbo \"${wavFolder}/${num}.wav\""
-                    (object cwd wavFolder)
-                	->[error :String stdout stderr] {
-                        (when stderr (errorMessage stderr))
+                // None are queued -- transcribe now
+                (unless transcribing
+                    (process.stdin.cork)
+                    (process.stdin.write "${file}\n")
+                    (process.stdin.uncork))
 
-                        (let [output (stdout.substr (+ 2 (stdout.indexOf "]")))
-                                markerStart (.indexOf (activeTextEditor.document.getText) marker)
-                                markerEnd (+ markerStart marker.length)
-                                range (new Range (toPosition markerStart) (toPosition markerEnd))]
-                            (activeTextEditor.edit ->e (e.replace range output)))                      
-                    }))))
+            	(transcribing.push [file marker])
+                
+                )))
     
     // Add your extension's configuration here with (defConfiguration <...>):
-    (defConfiguration 
-    //  :Bool configBool
-    //      (object
-    //          default false)
-        :String whisperPath
-            (object
-                default ""))
-    )
+    (defConfiguration
+        // Recording:
+    	:Int exitOnSilence // frames of silence before ending a chunk
+            (object default 12)
+        // Transcribing:
+        :String pythonPath
+            (object default "")
+        :String modelSize
+            (object default "turbo")
+        :String device
+            (object default "auto")
+        :String computeType
+            (object default "int8")
+        :String language
+            (object default "en")))
