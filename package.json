@@ -10,8 +10,9 @@
 	"categories": [],
 	"extensionPack": [],
 	"dependencies": {
-		"mic": "^2.1.2",
-		"jsdom": "^22.1.0"
+		"form-data": "^4.0.4",
+		"jsdom": "^22.1.0",
+		"mic": "^2.1.2"
 	},
 	"publisher": "kiss-lang",
 	"contributes": {
